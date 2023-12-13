@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 public interface CardInfoService {
 
-    VerifyBinResponse VerifyBin(Integer issuerNumber);
+    VerifyBinResponse verifyBin(Integer issuerNumber);
     StatsResponse getStats(int start, int limit);
 
 

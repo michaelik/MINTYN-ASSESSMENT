@@ -15,9 +15,9 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
 @Table(name = "tbl_card_info")

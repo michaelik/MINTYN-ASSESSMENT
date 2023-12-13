@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,10 +40,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void signUp(SignUpRequest request) {
-        boolean userEmailExist = userRepository
-                .findByEmail(request.getEmail())
-                .isPresent();
-        if (userEmailExist) throw new DuplicateResourceException("Email Already Taken");
+        Optional<User> userEmailExist = userRepository
+                .findByEmail(request.getEmail());
+        if (userEmailExist.isPresent()) throw new DuplicateResourceException("Email Already Taken");
         Gender gender = Gender.valueOf(request.getGender());
         String password = passwordEncoder.encode(request.getPassword());
         User user = User.builder()

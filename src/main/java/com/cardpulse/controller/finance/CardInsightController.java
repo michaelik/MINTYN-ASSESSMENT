@@ -48,7 +48,7 @@ public class CardInsightController {
     )
     {
         return new ResponseEntity<>(
-                cardInfoService.VerifyBin(bin),
+                cardInfoService.verifyBin(bin),
                 HttpStatus.OK);
     }
 

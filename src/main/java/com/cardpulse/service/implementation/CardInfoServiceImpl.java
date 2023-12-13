@@ -10,9 +10,7 @@ import com.cardpulse.payload.response.VerifyBinResponse;
 import com.cardpulse.repository.CardInfoRepository;
 import com.cardpulse.service.CardInfoService;
 import io.netty.resolver.DefaultAddressResolverGroup;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +49,7 @@ public class CardInfoServiceImpl implements CardInfoService {
     CardInfo cardInfo;
 
     @Override
-    public VerifyBinResponse VerifyBin(Integer bin) {
+    public VerifyBinResponse verifyBin(Integer bin) {
         CardInfo foundBinInfo = cardInfoRepository
                 .findByBin(bin);
         if (Objects.nonNull(foundBinInfo)) {
@@ -60,11 +58,14 @@ public class CardInfoServiceImpl implements CardInfoService {
             return buildVerifyBinResponse(foundBinInfo);
         }
         BinLookupResponse binLookupResponse = getBinData(bin);
+        // Save the data only
         CardInfo newCardInfo = CardInfo.builder()
+                //user request
                 .bin(bin)
                 .scheme(binLookupResponse.getScheme())
                 .type(binLookupResponse.getType())
                 .bank(binLookupResponse.getBank().getName())
+                // static constant
                 .numberOfHits(HITS_INCREMENT)
                 .build();
         cardInfoRepository.save(newCardInfo);
@@ -112,7 +113,7 @@ public class CardInfoServiceImpl implements CardInfoService {
         } catch (NumberFormatException e) {
             return false;
         }
-    }
+}
 
     private static StatsResponse buildStatsResponse(int start,
                                                     int limit,
@@ -126,26 +127,32 @@ public class CardInfoServiceImpl implements CardInfoService {
         );
     }
 
-    private BinLookupResponse getBinData(Integer bin) {
-        HttpClient httpClient = HttpClient.
-                create().
-                resolver(DefaultAddressResolverGroup.INSTANCE);
-        WebClient.RequestBodySpec requestSpec = getRequestDetail(bin, httpClient);
+    public BinLookupResponse getBinData(Integer bin) {
+        HttpClient httpClient = HttpClient
+                .create()
+                .resolver(DefaultAddressResolverGroup.INSTANCE);
         try {
-            return requestSpec.
-                    retrieve()
+            return webClient
+                    .baseUrl("https://lookup.binlist.net")
+                    .clientConnector(new ReactorClientHttpConnector(httpClient))
+                    .build()
+                    .method(HttpMethod.GET)
+                    .uri("/" + bin)
+                    .header("Accept-Version", "3")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
                     .onStatus(HttpStatus::is4xxClientError,
                             clientResponse -> {
-                        throw new BinLookupException(
-                                "Client error while looking up Bank Identification Number [%s]. Status code: %d"
-                                        .formatted(bin, clientResponse.rawStatusCode()));
-                    })
+                                throw new BinLookupException(
+                                        "Client error while looking up Bank Identification Number [%s]. Status code: %d"
+                                                .formatted(bin, clientResponse.rawStatusCode()));
+                            })
                     .onStatus(HttpStatus::is5xxServerError,
                             clientResponse -> {
-                        throw new BinLookupException(
-                                "Server error while looking up Bank Identification Number [%s]. Status code: %d"
-                                        .formatted(bin, clientResponse.rawStatusCode()));
-                    })
+                                throw new BinLookupException(
+                                        "Server error while looking up Bank Identification Number [%s]. Status code: %d"
+                                                .formatted(bin, clientResponse.rawStatusCode()));
+                            })
                     .bodyToMono(BinLookupResponse.class)
                     .retry(2)
                     .block();
@@ -166,19 +173,5 @@ public class CardInfoServiceImpl implements CardInfoService {
                 );
             }
         }
-
-    }
-
-    public WebClient.RequestBodySpec getRequestDetail(
-            Integer bin,
-            HttpClient httpClient
-    ){
-        return webClient
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .build()
-                .method(HttpMethod.GET)
-                .uri("https://lookup.binlist.net/" + bin)
-                .header("Accept-Version", "3")
-                .accept(MediaType.APPLICATION_JSON);
     }
 }
