@@ -10,6 +10,20 @@ jobs:
     name: Build and Test Project
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: cardInsight
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -21,11 +35,19 @@ jobs:
           java-version: '18'
 
       - name: Build with Maven
-        run: mvn clean package
+        run: mvn clean package -DskipTests
 
       - name: Verify with Maven
-        run: mvn clean verify
+        run: mvn clean verify -DskipTests
 
       - name: Run Unit Tests
-        run: mvn test -Dtest=com.cardpluse.service.CardInfoServiceImplTest,com.cardpluse.service.UserServiceImplTest
+        env:
+          DB_URL: jdbc:mysql://localhost:3306/cardInsight
+          DB_USERNAME: root
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          mvn test -Dtest=com.cardpluse.service.CardInfoServiceImplTest,com.cardpluse.service.UserServiceImplTest \
+            -Dspring.datasource.url=$DB_URL \
+            -Dspring.datasource.username=$DB_USERNAME \
+            -Dspring.datasource.password=$DB_PASSWORD
 
