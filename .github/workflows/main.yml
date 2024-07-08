@@ -45,7 +45,7 @@ jobs:
           DB_URL: jdbc:mysql://localhost:3306/cardInsight
           DB_USERNAME: root
         run: |
-          mvn test -Dtest=com.cardpluse.service.CardInfoServiceImplTest,com.cardpluse.service.UserServiceImplTest \
+          mvn test \
             -Dspring.datasource.url=$DB_URL \
             -Dspring.datasource.username=$DB_USERNAME \
             -Dspring.datasource.password=
