@@ -46,7 +46,7 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          mvn test Dtest=com.cardpluse.service.CardInfoServiceImplTest,com.cardpluse.service.UserServiceImplTest \
+          mvn test -Dtest=com.cardpluse.service.CardInfoServiceImplTest,com.cardpluse.service.UserServiceImplTest \
             -Dspring.datasource.url=$DB_URL \
             -Dspring.datasource.username=$DB_USERNAME \
             -Dspring.datasource.password=$DB_PASSWORD
